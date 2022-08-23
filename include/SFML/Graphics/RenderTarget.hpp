@@ -370,6 +370,11 @@ public:
     {
         m_defaultShader = shader;
     }
+    
+    sf::Shader* getDefaultShader()
+    {
+        return m_defaultShader;
+    }
 
 protected:
 
@@ -480,6 +485,7 @@ private:
     View        m_view;        ///< Current view
     StatesCache m_cache;       ///< Render states cache
     Uint64      m_id;          ///< Unique number that identifies the RenderTarget
+    sf::Shader* m_builtInShader;
     sf::Shader* m_defaultShader;
 };
 
