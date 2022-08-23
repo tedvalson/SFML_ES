@@ -65,10 +65,49 @@ ifdef prebuilt
 endif
 
 include $(CLEAR_VARS)
+LOCAL_MODULE := sfml-system-s
+LOCAL_SRC_FILES := lib/$(TARGET_ARCH_ABI)/libsfml-system-s.a
+LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)/include
+
+prebuilt_path := $(call local-prebuilt-path,$(LOCAL_SRC_FILES))
+prebuilt := $(strip $(wildcard $(prebuilt_path)))
+
+ifdef prebuilt
+    include $(PREBUILT_STATIC_LIBRARY)
+endif
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := sfml-window-s
+LOCAL_SRC_FILES := lib/$(TARGET_ARCH_ABI)/libsfml-window-s.a
+LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)/include
+LOCAL_STATIC_LIBRARIES := sfml-system-s
+
+prebuilt_path := $(call local-prebuilt-path,$(LOCAL_SRC_FILES))
+prebuilt := $(strip $(wildcard $(prebuilt_path)))
+
+ifdef prebuilt
+    include $(PREBUILT_STATIC_LIBRARY)
+endif
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := sfml-graphics-s
+LOCAL_SRC_FILES := lib/$(TARGET_ARCH_ABI)/libsfml-graphics-s.a
+LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)/include
+LOCAL_EXPORT_LDLIBS := -lEGL -llog -landroid
+LOCAL_STATIC_LIBRARIES := sfml-window-s sfml-system-s freetype
+
+prebuilt_path := $(call local-prebuilt-path,$(LOCAL_SRC_FILES))
+prebuilt := $(strip $(wildcard $(prebuilt_path)))
+
+ifdef prebuilt
+    include $(PREBUILT_STATIC_LIBRARY)
+endif
+
+include $(CLEAR_VARS)
 LOCAL_MODULE := sfml-main
 LOCAL_SRC_FILES := lib/$(TARGET_ARCH_ABI)/libsfml-main.a
 LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)/include
-LOCAL_SHARED_LIBRARIES := sfml-window sfml-system
+LOCAL_STATIC_LIBRARIES := sfml-window-s sfml-system-s
 
 prebuilt_path := $(call local-prebuilt-path,$(LOCAL_SRC_FILES))
 prebuilt := $(strip $(wildcard $(prebuilt_path)))
@@ -180,4 +219,3 @@ ifdef prebuilt
 endif
 
 $(call import-module,third_party/sfml/extlibs)
-

@@ -49,7 +49,7 @@ else()
     if(SFML_OS_IOS)
         set(BUILD_SHARED_LIBS FALSE)
     elseif(SFML_OS_ANDROID)
-        set(BUILD_SHARED_LIBS TRUE)
+        set(BUILD_SHARED_LIBS FALSE)
     endif()
 endif()
 
