@@ -459,6 +459,10 @@ private:
     ///
     ////////////////////////////////////////////////////////////
     void cleanupDraw(const RenderStates& states);
+    
+    static sf::Shader *getBuiltInShader(const RenderStates& states);
+    sf::Shader *getShader(const RenderStates& states);
+
 
     ////////////////////////////////////////////////////////////
     /// \brief Render states cache
@@ -485,7 +489,6 @@ private:
     View        m_view;        ///< Current view
     StatesCache m_cache;       ///< Render states cache
     Uint64      m_id;          ///< Unique number that identifies the RenderTarget
-    sf::Shader* m_builtInShader;
     sf::Shader* m_defaultShader;
 };
 

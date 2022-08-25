@@ -130,7 +130,20 @@ namespace
 		\
 		void main() \
 		{ \
-			gl_FragColor = v_color * texture2D(texture, v_texCoord); \
+			gl_FragColor = v_color * texture2D(texture, v_texCoord.st); \
+		} \
+	";
+	
+	static const std::string defaultFragShaderNoTexture = " \
+		#ifdef GL_ES \n\
+		precision mediump float; \n\
+		#endif \n\
+		varying vec4 v_color; \
+		varying vec2 v_texCoord; \
+		\
+		void main() \
+		{ \
+			gl_FragColor = v_color; \
 		} \
 	";
 
@@ -154,16 +167,6 @@ namespace
 			v_color = color; \
 		} \
 	";
-
-	sf::Shader *makeBuiltInShader()
-	{
-		auto shader = new sf::Shader;
-		if (shader->loadFromMemory(defaultVertexShader, defaultFragShader))
-			shader->setUniform("texture", sf::Shader::CurrentTexture);
-		else
-			sf::err() << "Failed to load default shader." << std::endl;
-		return shader;
-	}
 }
 
 
@@ -175,10 +178,8 @@ m_defaultView(),
 m_view       (),
 m_cache      (),
 m_id         (0),
-m_builtInShader(nullptr),
 m_defaultShader(nullptr)
 {
-	m_defaultShader = m_builtInShader = makeBuiltInShader();
     m_cache.glStatesSet = false;
 }
 
@@ -186,7 +187,6 @@ m_defaultShader(nullptr)
 ////////////////////////////////////////////////////////////
 RenderTarget::~RenderTarget()
 {
-	delete m_builtInShader;
 }
 
 
@@ -348,7 +348,7 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount,
                 data = reinterpret_cast<const char*>(m_cache.vertexCache);
 
 #ifdef SFML_OPENGL_ES
-            sf::Shader* shader = states.shader ? states.shader : m_defaultShader;
+            sf::Shader* shader = getShader(states);
 
             //TODO BC: actually get the layout indices
 
@@ -388,7 +388,7 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount,
             const char* data = reinterpret_cast<const char*>(m_cache.vertexCache);
 
 #ifdef SFML_OPENGL_ES
-            sf::Shader* shader = states.shader ? states.shader : m_defaultShader;
+            sf::Shader* shader = getShader(states);
 
             //TODO BC: actually get the layout indices
 
@@ -420,7 +420,7 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount,
             // If we pre-transform the vertices, we must use our internal vertex cache
             if (useVertexCache)
                 data = reinterpret_cast<const char*>(m_cache.vertexCache);
-            sf::Shader* shader = states.shader ? states.shader : m_defaultShader;
+            sf::Shader* shader = getShader(states);
 
             //TODO BC: actually get the layout indices
 
@@ -504,7 +504,7 @@ void RenderTarget::draw(const VertexBuffer& vertexBuffer, std::size_t firstVerte
         }
 
 #ifdef SFML_OPENGL_ES
-        sf::Shader* shader = states.shader ? states.shader : m_defaultShader;
+        sf::Shader* shader = getShader(states);
 
         //TODO BC: actually get the layout indices
 
@@ -680,8 +680,10 @@ void RenderTarget::resetGLStates()
         // Apply the default SFML states
         applyBlendMode(BlendAlpha);
         applyTexture(NULL);
+#ifndef SFML_OPENGL_ES
         if (shaderAvailable)
             applyShader(NULL);
+#endif
 
         if (vertexBufferAvailable)
             glCheck(VertexBuffer::bind(NULL));
@@ -724,8 +726,8 @@ void RenderTarget::applyCurrentView(const RenderStates& states)
 
     // Set the projection matrix
 #ifdef SFML_OPENGL_ES
-        sf::Shader* shader = states.shader ? states.shader : m_defaultShader;
-        shader->setUniform("projMatrix", Glsl::Mat4(m_view.getTransform().getMatrix()));
+    sf::Shader* shader = getShader(states);
+    shader->setUniform("projMatrix", Glsl::Mat4(m_view.getTransform().getMatrix()));
 #else
     glCheck(glMatrixMode(GL_PROJECTION));
     glCheck(glLoadMatrixf(m_view.getTransform().getMatrix()));
@@ -793,7 +795,7 @@ void RenderTarget::applyTransform(const RenderStates& states)
     // current mode (for optimization purpose, since it's the most used)
 
 #ifdef SFML_OPENGL_ES
-        sf::Shader* shader = states.shader ? states.shader : m_defaultShader;
+        sf::Shader* shader = getShader(states);
         shader->setUniform("viewMatrix", Glsl::Mat4(states.transform.getMatrix()));
 #else
         if (states.transform == Transform::Identity)
@@ -828,12 +830,12 @@ void RenderTarget::setupDraw(bool useVertexCache, const RenderStates& states)
         resetGLStates();
 
 #ifdef SFML_OPENGL_ES
-        sf::Shader* shader = states.shader ? states.shader : m_defaultShader;
-        applyShader(shader);
+	sf::Shader* shader = getShader(states);
+	applyShader(shader);
 
-        if(states.texture) {
-            shader->setUniform("textMatrix", states.texture->getMatrix(Texture::Pixels));
-        }
+	if(states.texture) {
+		shader->setUniform("textMatrix", states.texture->getMatrix(Texture::Pixels));
+	}
 #else
         // Apply the shader
     if (states.shader) {
@@ -846,7 +848,7 @@ void RenderTarget::setupDraw(bool useVertexCache, const RenderStates& states)
         // Since vertices are transformed, we must use an identity transform to render them
 #ifdef SFML_OPENGL_ES
         Transform identity = Transform::Identity;
-        sf::Shader* shader = states.shader ? states.shader : m_defaultShader;
+        sf::Shader* shader = getShader(states);
         shader->setUniform("viewMatrix", Glsl::Mat4(identity.getMatrix()));
 #else
         if (!m_cache.enable || !m_cache.useVertexCache) {
@@ -884,13 +886,9 @@ void RenderTarget::setupDraw(bool useVertexCache, const RenderStates& states)
     }
     else
     {
-#ifdef SFML_OPENGL_ES
-        applyTexture(states.texture);
-#else
         Uint64 textureId = states.texture ? states.texture->m_cacheId : 0;
         if (textureId != m_cache.lastTextureId)
             applyTexture(states.texture);
-#endif
     }
 }
 
@@ -912,9 +910,7 @@ void RenderTarget::drawPrimitives(PrimitiveType type, std::size_t firstVertex, s
 void RenderTarget::cleanupDraw(const RenderStates& states)
 {
     // Unbind the shader, if any
-#ifdef SFML_OPENGL_ES
-    applyShader(NULL);
-#else
+#ifndef SFML_OPENGL_ES
     if (states.shader)
         applyShader(NULL);
 #endif
@@ -926,6 +922,34 @@ void RenderTarget::cleanupDraw(const RenderStates& states)
 
     // Re-enable the cache at the end of the draw if it was disabled
     m_cache.enable = true;
+}
+
+sf::Shader *RenderTarget::getBuiltInShader(const RenderStates& states)
+{
+	static Shader *shader = nullptr;
+	static Shader *shaderNoTexture = nullptr;
+	if (!shader) {
+		shader = new Shader;
+		shaderNoTexture = new Shader;
+		if (shader->loadFromMemory(defaultVertexShader, defaultFragShader) &&
+				shaderNoTexture->loadFromMemory(defaultVertexShader, defaultFragShaderNoTexture))
+		{
+			shader->setUniform("texture", sf::Shader::CurrentTexture);
+		}
+		else
+			sf::err() << "Failed to load default shaders." << std::endl;
+	}
+	return (states.texture) ? shader : shaderNoTexture;
+}
+
+sf::Shader *RenderTarget::getShader(const RenderStates& states)
+{
+	setActive(true);
+	if (states.shader)
+		return states.shader;
+	if (m_defaultShader)
+		return m_defaultShader;
+	return getBuiltInShader(states);
 }
 
 } // namespace sf
