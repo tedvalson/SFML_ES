@@ -690,6 +690,8 @@ public:
     ///
     ////////////////////////////////////////////////////////////
     static bool isGeometryAvailable();
+    
+    const std::string &getErrorLog() const { return m_errorLog; }
 
 private:
 
@@ -749,6 +751,7 @@ private:
     int          m_currentTexture; ///< Location of the current texture in the shader
     TextureTable m_textures;       ///< Texture variables in the shader, mapped to their location
     UniformTable m_uniforms;       ///< Parameters location cache
+    std::string m_errorLog;
 };
 
 } // namespace sf

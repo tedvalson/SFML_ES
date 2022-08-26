@@ -850,6 +850,8 @@ bool Shader::isGeometryAvailable()
 bool Shader::compile(const char* vertexShaderCode, const char* geometryShaderCode, const char* fragmentShaderCode)
 {
     TransientContextLock lock;
+    
+    m_errorLog.clear();
 
     // First make sure that we can use shaders
     if (!isAvailable())
@@ -903,6 +905,7 @@ bool Shader::compile(const char* vertexShaderCode, const char* geometryShaderCod
                   << log << std::endl;
             glCheck(GLEXT_glDeleteShader(vertexShader));
             glCheck(GLEXT_glDeleteProgram(shaderProgram));
+            m_errorLog = log;
             return false;
         }
 
@@ -930,6 +933,7 @@ bool Shader::compile(const char* vertexShaderCode, const char* geometryShaderCod
                   << log << std::endl;
             glCheck(GLEXT_glDeleteShader(geometryShader));
             glCheck(GLEXT_glDeleteProgram(shaderProgram));
+            m_errorLog = log;
             return false;
         }
 
@@ -958,6 +962,7 @@ bool Shader::compile(const char* vertexShaderCode, const char* geometryShaderCod
                   << log << std::endl;
             glCheck(GLEXT_glDeleteShader(fragmentShader));
             glCheck(GLEXT_glDeleteProgram(shaderProgram));
+            m_errorLog = log;
             return false;
         }
 
@@ -979,6 +984,7 @@ bool Shader::compile(const char* vertexShaderCode, const char* geometryShaderCod
         err() << "Failed to link shader:" << std::endl
               << log << std::endl;
         glCheck(GLEXT_glDeleteProgram(shaderProgram));
+        m_errorLog = log;
         return false;
     }
 
