@@ -117,6 +117,13 @@ void RenderWindow::onCreate()
         // We assume that this window's context is still active at this point
         glCheck(glGetIntegerv(GLEXT_GL_FRAMEBUFFER_BINDING, reinterpret_cast<GLint*>(&m_defaultFrameBuffer)));
     }
+    
+#ifdef SFML_OPENGL_ES
+	GLubyte pixels[] = { 255, 255, 255, 255 };
+	glCheck(glBindTexture(GL_TEXTURE_2D, 0));
+	glCheck(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels));
+	glCheck(glFlush());
+#endif
 
     // Just initialize the render target part
     RenderTarget::initialize();

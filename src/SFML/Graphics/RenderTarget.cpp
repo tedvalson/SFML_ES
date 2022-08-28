@@ -133,19 +133,6 @@ namespace
 			gl_FragColor = v_color * texture2D(texture, v_texCoord.st); \
 		} \
 	";
-	
-	static const std::string defaultFragShaderNoTexture = " \
-		#ifdef GL_ES \n\
-		precision mediump float; \n\
-		#endif \n\
-		varying vec4 v_color; \
-		varying vec2 v_texCoord; \
-		\
-		void main() \
-		{ \
-			gl_FragColor = v_color; \
-		} \
-	";
 
 	static const std::string defaultVertexShader = " \
 		#ifdef GL_ES \n\
@@ -927,19 +914,14 @@ void RenderTarget::cleanupDraw(const RenderStates& states)
 sf::Shader *RenderTarget::getBuiltInShader(const RenderStates& states)
 {
 	static Shader *shader = nullptr;
-	static Shader *shaderNoTexture = nullptr;
 	if (!shader) {
 		shader = new Shader;
-		shaderNoTexture = new Shader;
-		if (shader->loadFromMemory(defaultVertexShader, defaultFragShader) &&
-				shaderNoTexture->loadFromMemory(defaultVertexShader, defaultFragShaderNoTexture))
-		{
+		if (shader->loadFromMemory(defaultVertexShader, defaultFragShader))
 			shader->setUniform("texture", sf::Shader::CurrentTexture);
-		}
 		else
 			sf::err() << "Failed to load default shaders." << std::endl;
 	}
-	return (states.texture) ? shader : shaderNoTexture;
+	return shader;
 }
 
 sf::Shader *RenderTarget::getShader(const RenderStates& states)
